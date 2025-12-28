@@ -1,8 +1,8 @@
 variable "location" {
   
-  default = "East US"
+  default = "North Europe"
 }
 variable "resource_group_name" {
   
-  default = "Ashish"
+  default = "airtelribbon"
 }

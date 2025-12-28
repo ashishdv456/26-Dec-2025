@@ -2,14 +2,14 @@ resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
   location = var.location
 }
-resource "azurerm_storage_account" "Ashish2" {
-  name                     = "ashish1a"
+resource "azurerm_storage_account" "Ashish12" {
+  name                     = "ashish1a2"
   resource_group_name      = azurerm_resource_group.rg.name
   location                 = azurerm_resource_group.rg.location
   account_tier             = "Standard"
   account_replication_type = "GRS"
 }
-resource "azurerm_virtual_network" "vnet" {
+resource "azurerm_virtual_network" "vnet123" {
   name                = "Ashish2-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
@@ -26,7 +26,7 @@ resource "azurerm_virtual_network" "main" {
 resource "azurerm_subnet" "Ashish7" {
   name                 = "Ashish7-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
+  virtual_network_name = azurerm_virtual_network.vnet123.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
@@ -78,27 +78,13 @@ resource "azurerm_resource_group" "rgravi" {
   location = var.location
 }
 # Public IP for Bastion
-resource "azurerm_public_ip" "bastion_ip" {
-  name                = "bastion-pip"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-}
-
-# Bastion
-resource "azurerm_bastion_host" "bastion" {
-  name                = "MyBastion"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  #dns_name            = "mybastiondns"
-
-  ip_configuration {
-    name                 = "bastion-ip-config"
-    subnet_id            = azurerm_subnet.bastion_subnet.id
-    public_ip_address_id = azurerm_public_ip.bastion_ip.id
-  }
-}
+#resource "azurerm_public_ip" "bastion_ip" {
+  #name                = "bastion-pip"
+  #location            = var.location
+  #resource_group_name = var.resource_group_name
+  #allocation_method   = "Static"
+  #sku                 = "Standard"
+#}
 
 # Bastion Subnet
 resource "azurerm_subnet" "bastion_subnet" {
@@ -108,13 +94,37 @@ resource "azurerm_subnet" "bastion_subnet" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.1.0/27"]
 }
+
+#5️⃣ Read Existing Key Vault
+# ===============================
+data "azurerm_key_vault" "ravikvy1" {
+  name                = "ravikvy1"      # 🔁 your key vault name
+  resource_group_name = "rg-todo-dev"
+}
+
+# ===============================
+# 6️⃣ Read Secrets from Key Vault
+# ===============================
+data "azurerm_key_vault_secret" "raviuser" {
+  name         = "raviuser"              # 🔁 secret name
+  key_vault_id = data.azurerm_key_vault.ravikvy1.id
+}
+
+data "azurerm_key_vault_secret" "ravipass" {
+  name         = "ravipass"              # 🔁 secret name
+  key_vault_id = data.azurerm_key_vault.ravikvy1.id
+
+}
+
 # 8️⃣ Linux VM
-resource "azurerm_linux_virtual_machine" "vm" {
-  name                = "AshishVM"
+resource "azurerm_linux_virtual_machine" "vm_test" {
+  name                = "ashishvm7"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  size                = "Standard_D2s_v3"
-  admin_username      = "azureuser"
+  size                = "Standard_B2ls_v2"
+  admin_username      = data.azurerm_key_vault_secret.raviuser.value
+  admin_password      = data.azurerm_key_vault_secret.ravipass.value
+  disable_password_authentication    = false
 
   network_interface_ids = [
     azurerm_network_interface.nic.id
@@ -131,12 +141,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
     sku       = "22_04-lts"
     version   = "latest"
   }
-
-  admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("C:/Users/Admin/.ssh/id_rsa.pub")
   }
-}
 output "public_ip_address" {
   description = "Public IP of the VM"
   value       = azurerm_public_ip.publicip.ip_address
